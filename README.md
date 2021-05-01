@@ -3,6 +3,9 @@
 Simple Touch pad for Codea.
 
 
+![Example](https://github.com/samermurad/codea-axis-pad/blob/9a33152c68faf98ad6713c6c538c62379b248234/example.jpeg)
+
+
 ### Usage
 
 ```lua
