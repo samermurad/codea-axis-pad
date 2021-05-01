@@ -3,13 +3,15 @@
 
 function setup()
     axisPad = AxisPad{}
+    -- axisPad.bodyColor = color(213, 34, 70)
+    -- axisPad.edgeColor = color(255)
+    -- axisPad.img = nil
     parameter.color('bodyColor', axisPad.bodyColor, function(col)
         axisPad.bodyColor = col
     end)
     parameter.color('edgeColor', axisPad.edgeColor, function(col)
         axisPad.edgeColor = col
     end)
-    
     parameter.action('apply changes',function() 
         axisPad.img = nil
         sprt = nil

@@ -24,6 +24,7 @@ function draw()
 end
 
 -- optional, otherwise import the Codea “Touches” project
+-- to automate touches handling
 function touched(touch)
     axisPad:touched(touch)
 end
