@@ -15,7 +15,7 @@ function setup()
 end
 
 function draw()
-    — float values ranging from -1 to 1, stepped by 0.1
+    -- float values ranging from -1 to 1, stepped by 0.1
     local x = axisPad:getX()
     local y = axisPad:getY()
     x, y = axisPad:getXY()
@@ -23,7 +23,7 @@ function draw()
     axisPad:draw()
 end
 
-—- optional, otherwise import the Codea “Touches” project
+-- optional, otherwise import the Codea “Touches” project
 function touched(touch)
     axisPad:touched(touch)
 end
@@ -35,4 +35,18 @@ end
 
 In order to be a bit more performant, the AxisPad creates a small sprite from it’s values and saves it locally, the sprite is later used for both body and the thumb.
 
-So after setting the axisPad.bodyColor and axisPad.edgeColor, you’ll need to set the axisPad.img to nil so a new sprite will be generated on next frame
+So after setting the `axisPad.bodyColor` and `axisPad.edgeColor`, you’ll need to set the `axisPad.img` to nil so a new sprite will be generated on next frame
+
+```lua
+
+...
+
+function changeColors()
+    axisPad.bodyColor = color(213, 34, 70)
+    axisPad.edgeColor = color(255)
+    axisPad.img = nil
+end
+
+...
+
+```
