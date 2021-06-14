@@ -1,23 +1,27 @@
 AxisPad = class()
 
 function AxisPad:init(opt)
-    -- you can accept and set parameters here
     opt = opt or {}
+    local useTouches = opt.useTouches ~= nil and opt.useTouches or true
     self.touchStart = vec2(0,0)
     self.touchMoved = vec2(0,0)
     self.touchDis = vec2(0,0)
-    self.range = opt.range or 25
+    self.range = opt.range or 28
     self.threshold = 0.5
-    self.bodyColor = color(101)
-    self.edgeColor = color(241, 166, 44)
+    self.bodyColor = opt.bodyColor or color(59)
+    self.edgeColor = opt.edgeColor or color(207, 241, 44)
     self.x, self.y = 0,0
     self.r = opt.r or 85
     self.innerR = opt.innerR or 65
-    
+    self.sprtPath = opt.sprtPath or ( asset .. 'padd_sheet.png' )
+    self.clipRange = opt.clipRange or true
+    self.smoothResults = opt.smoothResults or false
     self.img = nil
     self.baseMesh = nil
     self.thumbMesh = nil
-    if touches then touches.addHandler(self, 0, false) end
+
+
+    if touches and useTouches then touches.addHandler(self, 0, false) end
 end
 
 -- Circle Sprite Gen
@@ -32,6 +36,9 @@ function AxisPad:circle(w,h)
     ellipse(0,0, w, h)
     strokeWidth(2)
     -- inner edge
+    local dim = color(self.bodyColor.r, self.bodyColor.g, self.bodyColor.b, self.bodyColor.a)
+    
+    fill(self.bodyColor)
     ellipse(0,0, w * .85,h * .85)
 
     popStyle()
@@ -51,7 +58,7 @@ function AxisPad:createSprite()
     self:circle(self.r, self.r)
 
     setContext()
-    saveImage(asset.documents.AxisPad .. 'padd_sheet.png', img)
+    saveImage(self.sprtPath, img)
 
     popMatrix()
     popStyle()
@@ -71,6 +78,7 @@ function AxisPad:update()
     self.thumbMesh.x = self.touchStart.x + self.touchMoved.x
     self.thumbMesh.y = self.touchStart.y + self.touchMoved.y
 end
+
 
 function AxisPad:draw()
     self:update()
@@ -100,6 +108,11 @@ function AxisPad:getXY()
     return self.x, self.y
 end
 
+-- might be null
+function AxisPad:getAngle()
+    return self.angle
+end
+
 function AxisPad:len()
    return vec2(self.x, self.y):len()
 end
@@ -116,26 +129,42 @@ function AxisPad:began(touch)
 end
 
 function AxisPad:moved(touch)
-    if touch.id == self.touchId then
+    if touch.id == self.touchId and touch.pos ~= nil then
         local n = (touch.pos - self.touchStart)
-        
+
         local x = touch.pos.x - self.touchStart.x
         local y = touch.pos.y - self.touchStart.y
+
         
         local angle = math.atan2(n.y, n.x)
+        self.angle = angle
+
+        
         local maxX = math.abs(math.cos(angle) * (self.range))
         local maxY = math.abs(math.sin(angle) * (self.range))
+        local clippingX = self.range
+        local clippingY = self.range
         
-        x = math.max(-maxX, math.min(maxX, x))
-        y = math.max(-maxY, math.min(maxY, y))
+        if self.clipRange then
+            clippingX = maxX
+            clippingY = maxY
+        end
         
-        self.touchMoved = vec2(x,y) 
-        self.x = smoothOut(x / self.range * 2, 0.1)
-        self.y = smoothOut(y / self.range * 2, 0.1)
+        local factorX = self.range
+        local factorY = self.range
+
+        x = clamp(x, -clippingX, clippingX)
+        y = clamp(y, -clippingY, clippingY)
+
+        self.touchMoved = vec2(x, y)
+        self.x = self.smoothResults and smoothOut(x / (factorX), 0.001) or (x / (factorX))
+        self.y = self.smoothResults and smoothOut(y / (factorY), 0.001) or (y / (factorY))
         self.x = clamp(self.x, -1.0, 1.0)
         self.y = clamp(self.y, -1.0, 1.0)
         return true
+
     end
+
     return false
 end
 
@@ -144,6 +173,7 @@ function AxisPad:ended(touch)
         self.touchId = nil
         self.x = 0
         self.y = 0
+        self.angle = nil
         return true
     end
     return false

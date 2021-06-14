@@ -98,7 +98,7 @@ function RadSprt:draw()
     self.mesh:draw()
     if self.debug then
          fill(255, 14, 0)
-        for _,p in ipairs(self.mesh.vertices) do
+        for _, p in ipairs(self.mesh.vertices) do
             ellipse(p.x, p.y, 5)
         end
     end
