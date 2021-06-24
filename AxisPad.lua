@@ -5,29 +5,36 @@ function AxisPad:init(opt)
     local useTouches = opt.useTouches ~= nil and opt.useTouches or true
     self.touchStart = vec2(0,0)
     self.touchMoved = vec2(0,0)
-    self.touchDis = vec2(0,0)
     self.range = opt.range or 28
     self.threshold = 0.5
     self.bodyColor = opt.bodyColor or color(59)
     self.edgeColor = opt.edgeColor or color(207, 241, 44)
-    self.x, self.y = 0,0
+    self.x, self.y = 0, 0
     self.r = opt.r or 85
     self.innerR = opt.innerR or 65
     self.sprtPath = opt.sprtPath or ( asset .. 'padd_sheet.png' )
     self.clipRange = opt.clipRange or true
     self.smoothResults = opt.smoothResults or false
+    self.use2x = opt.use2x or false
+    self.is2x = false
     self.img = nil
     self.baseMesh = nil
     self.thumbMesh = nil
-
-
+    
+    
     if touches and useTouches then touches.addHandler(self, 0, false) end
 end
 
+function AxisPad:reset()
+     self.is2x = false 
+     self.touchId = nil
+     self.touchStart = vec2(0,0)
+     self.touchMoved = vec2(0,0)
+end
 -- Circle Sprite Gen
 function AxisPad:circle(w,h)
     pushStyle()
-
+    
     noFill()
     strokeWidth(1)
     stroke(self.edgeColor)
@@ -40,7 +47,7 @@ function AxisPad:circle(w,h)
     
     fill(self.bodyColor)
     ellipse(0,0, w * .85,h * .85)
-
+    
     popStyle()
 end
 
@@ -56,10 +63,10 @@ function AxisPad:createSprite()
     background(0, 0)
     translate(max / 2, max / 2)
     self:circle(self.r, self.r)
-
+    
     setContext()
     saveImage(self.sprtPath, img)
-
+    
     popMatrix()
     popStyle()
     return img
@@ -80,6 +87,23 @@ function AxisPad:update()
 end
 
 
+function AxisPad:draw2X(r, didHit)
+    pushStyle()
+    pushMatrix()
+    noFill()
+    strokeWidth(2)
+    stroke(didHit and self.edgeColor or self.bodyColor)
+    ellipse(0, 0, r * 2)
+    fill(didHit and self.edgeColor or self.bodyColor)
+    translate(r * 1.2, r * 0.5)
+    fontSize(24)
+    font("Verdana")
+    textAlign(CENTER)
+    text("2x")
+    popStyle()
+    popMatrix()
+end
+
 function AxisPad:draw()
     self:update()
     
@@ -87,8 +111,13 @@ function AxisPad:draw()
     pushMatrix()
     
     if self.touchId then
-     self.baseMesh:draw()
-     self.thumbMesh:draw()
+        self.baseMesh:draw()
+        self.thumbMesh:draw()
+        translate(self.baseMesh.x, self.baseMesh.y)
+        if self.use2x then
+            self:draw2X(self.r, self.is2x)        
+        end
+        
     end
     
     popStyle()
@@ -114,7 +143,7 @@ function AxisPad:getAngle()
 end
 
 function AxisPad:len()
-   return vec2(self.x, self.y):len()
+    return vec2(self.x, self.y):len()
 end
 
 -- Touches handling
@@ -131,17 +160,15 @@ end
 function AxisPad:moved(touch)
     if touch.id == self.touchId and touch.pos ~= nil then
         local n = (touch.pos - self.touchStart)
-
-        local x = touch.pos.x - self.touchStart.x
-        local y = touch.pos.y - self.touchStart.y
-
+        local x, y = n.x, n.y
         
         local angle = math.atan2(n.y, n.x)
         self.angle = angle
-
+        
         
         local maxX = math.abs(math.cos(angle) * (self.range))
         local maxY = math.abs(math.sin(angle) * (self.range))
+        
         local clippingX = self.range
         local clippingY = self.range
         
@@ -152,19 +179,29 @@ function AxisPad:moved(touch)
         
         local factorX = self.range
         local factorY = self.range
-
+        
         x = clamp(x, -clippingX, clippingX)
         y = clamp(y, -clippingY, clippingY)
-
+        
         self.touchMoved = vec2(x, y)
+        
         self.x = self.smoothResults and smoothOut(x / (factorX), 0.001) or (x / (factorX))
         self.y = self.smoothResults and smoothOut(y / (factorY), 0.001) or (y / (factorY))
         self.x = clamp(self.x, -1.0, 1.0)
         self.y = clamp(self.y, -1.0, 1.0)
+        
+        if self.use2x then
+            if (self.r) <= math.abs(n.x) or (self.r) <= math.abs(n.y) then
+                self.is2x = true
+            else
+                self.is2x = false
+            end
+        end
+        
         return true
-
+        
     end
-
+    
     return false
 end
 
@@ -174,6 +211,7 @@ function AxisPad:ended(touch)
         self.x = 0
         self.y = 0
         self.angle = nil
+        self.is2x = false
         return true
     end
     return false
@@ -181,10 +219,10 @@ end
 
 function AxisPad:touched(touch)
     if touch.state == BEGAN then
-       return self:began(touch)
+        return self:began(touch)
     elseif touch.state == CHANGED then
-       return self:moved(touch)
+        return self:moved(touch)
     elseif touch.state == ENDED or touch.state == CANCELLED then
-       return self:ended(touch)
+        return self:ended(touch)
     end
 end
